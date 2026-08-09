@@ -218,10 +218,29 @@
 
     <!-- Footer -->
     <footer>
-        <div style="max-width: 1300px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-            <div data-i18n="footer_text">MedConnect Emergency Healthcare Stock Locator © 2026. Real-Time Community Health Platform.</div>
-            <div>
-                <a href="vendor.html" style="color: var(--primary); text-decoration: underline;" data-i18n="footer_vendor_link">Pharmacy Vendor Portal</a>
+        <div style="max-width: 1300px; margin: 0 auto;">
+            <!-- Top Row: Brand + Links -->
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem; margin-bottom: 1.25rem;">
+                <div style="display: flex; align-items: center; gap: 0.6rem;">
+                    <img src="favicon.png" alt="MedConnect" style="height: 28px; width: 28px; border-radius: 6px;">
+                    <span style="font-size: 1rem; font-weight: 800; font-family: var(--font-heading);"><span style="color:#fff;">Med</span><span style="color:var(--primary);">Connect</span></span>
+                </div>
+                <div style="display: flex; gap: 1.5rem; align-items: center; font-size: 0.85rem;">
+                    <a href="index.html" style="color: var(--text-muted); transition: color 0.2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'">Home</a>
+                    <a href="vendor.html" style="color: var(--text-muted); transition: color 0.2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'">Vendor Portal</a>
+                    <a href="https://github.com/RushalBangar/MedConnect" target="_blank" rel="noopener" style="color: var(--text-muted); transition: color 0.2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'">GitHub ↗</a>
+                </div>
+            </div>
+            <!-- Divider -->
+            <div style="border-top: 1px solid var(--border-color); margin-bottom: 1.25rem;"></div>
+            <!-- Bottom Row: Copyright + Author -->
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+                <div style="font-size: 0.82rem; color: var(--text-dim);">
+                    © 2026 <strong style="color: var(--text-muted);">MedConnect</strong>. Real-Time Emergency Healthcare Stock Locator. Nashik, India.
+                </div>
+                <div style="font-size: 0.82rem; color: var(--text-dim);">
+                    Built with ❤️ by <a href="https://github.com/RushalBangar" target="_blank" rel="noopener" style="color: var(--primary); font-weight: 700; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Rushal Bangar</a>
+                </div>
             </div>
         </div>
     </footer>
