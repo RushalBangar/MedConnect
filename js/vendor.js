@@ -47,7 +47,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function hideAuthModal() {
-        if (authOverlay) authOverlay.classList.remove('active');
+        if (authOverlay) {
+            authOverlay.classList.remove('active');
+            setTimeout(() => { authOverlay.style.display = 'none'; }, 300); // Wait for transition
+        }
     }
 
     if (authForm) {
@@ -60,6 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 isAuthenticated = true;
                 localStorage.setItem('medconnect_vendor_auth', 'true');
                 hideAuthModal();
+                renderVendorDashboard(); // Ensure dashboard is fresh
                 showNotification("Successfully authenticated vendor profile!", "success");
             }
         });
