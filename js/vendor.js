@@ -1,10 +1,12 @@
 /**
  * MedConnect - Vendor & Pharmacy Inventory Management Logic
- * Handles Authentication, Real-Time CRUD, and Frictionless Command Parsing (SMS/WhatsApp)
+ * Supports i18n, Theme Toggling, Real-Time CRUD, and SMS Command Parsing
  */
 
 document.addEventListener('DOMContentLoaded', () => {
     const store = window.medConnectStore;
+    const i18n = window.i18n;
+
     let currentVendorPharmacyId = localStorage.getItem('medconnect_vendor_pharmacy_id') || 'pharm-001';
     let isAuthenticated = localStorage.getItem('medconnect_vendor_auth') === 'true';
 
@@ -30,8 +32,11 @@ document.addEventListener('DOMContentLoaded', () => {
         populatePharmacySelector();
         renderVendorDashboard();
 
-        // Subscribe to real-time updates
         store.subscribe(() => {
+            renderVendorDashboard();
+        });
+
+        window.addEventListener('languageChanged', () => {
             renderVendorDashboard();
         });
     }
@@ -44,7 +49,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (authOverlay) authOverlay.classList.remove('active');
     }
 
-    // Handle Login
     if (authForm) {
         authForm.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -60,7 +64,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Populate Selector Dropdown
     function populatePharmacySelector() {
         if (!pharmacySelector) return;
         const pharmacies = store.getAllPharmacies();
@@ -75,7 +78,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Render Dashboard Table & Info
     function renderVendorDashboard() {
         const pharmacy = store.getPharmacyById(currentVendorPharmacyId);
         if (!pharmacy) return;
@@ -88,30 +90,29 @@ document.addEventListener('DOMContentLoaded', () => {
         inventoryTableBody.innerHTML = pharmacy.inventory.map(item => `
             <tr>
                 <td>
-                    <strong style="color: white;">${item.name}</strong>
-                    <div style="font-size: 0.75rem; color: #64748b;">${item.category}</div>
+                    <strong style="color: var(--heading-color);">${item.name}</strong>
+                    <div style="font-size: 0.75rem; color: var(--text-dim);">${item.category}</div>
                 </td>
                 <td>
                     <span class="pill-qty ${item.inStock ? (item.quantity > 5 ? 'qty-available' : 'qty-low') : 'qty-none'}">
-                        ${item.inStock ? `${item.quantity} ${item.unit}` : 'Out of Stock'}
+                        ${item.inStock ? `${item.quantity} ${item.unit}` : i18n.t('out_of_stock')}
                     </span>
                 </td>
                 <td>${item.price}</td>
                 <td>
                     <button onclick="toggleStockStatus('${item.id}', ${!item.inStock})" class="btn btn-sm ${item.inStock ? 'btn-outline' : 'btn-emergency'}">
-                        ${item.inStock ? 'Mark Out of Stock' : 'Mark In Stock'}
+                        ${item.inStock ? i18n.t('mark_out_stock') : i18n.t('mark_in_stock')}
                     </button>
                 </td>
                 <td>
                     <button onclick="deleteItem('${item.id}')" class="btn btn-sm btn-ghost" style="color: #ef4444;">
-                        🗑️ Delete
+                        ${i18n.t('delete_btn')}
                     </button>
                 </td>
             </tr>
         `).join('');
     }
 
-    // Global Handlers for inline buttons
     window.toggleStockStatus = function(itemId, newStatus) {
         const pharmacy = store.getPharmacyById(currentVendorPharmacyId);
         const item = pharmacy.inventory.find(i => i.id === itemId);
@@ -122,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
             quantity: newStatus ? (item.quantity > 0 ? item.quantity : 10) : 0
         });
 
-        showNotification(`Updated ${item.name} status to ${newStatus ? 'IN STOCK' : 'OUT OF STOCK'}`);
+        showNotification(`Updated ${item.name} status`);
     };
 
     window.deleteItem = function(itemId) {
@@ -132,7 +133,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Add New Item Form Handler
     if (addItemForm) {
         addItemForm.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -158,7 +158,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Frictionless SMS/WhatsApp Command Parser
     if (commandForm) {
         commandForm.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -175,7 +174,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const text = cmdText.toLowerCase();
         const pharmacy = store.getPharmacyById(currentVendorPharmacyId);
 
-        // Pattern 1: Add [qty] [Item Name] (e.g., "Add 15 Paracetamol 650mg")
         const addMatch = text.match(/add\s+(\d+)\s+(.+)/i);
         if (addMatch) {
             const qty = parseInt(addMatch[1], 10);
@@ -187,7 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     quantity: existing.quantity + qty,
                     inStock: true
                 });
-                logTerminalCommand(`✅ Success: Added ${qty} units to ${existing.name}. New total: ${existing.quantity + qty}`);
+                logTerminalCommand(`✅ Success: Added ${qty} units to ${existing.name}.`);
             } else {
                 store.addInventoryItem(currentVendorPharmacyId, {
                     name: itemName.charAt(0).toUpperCase() + itemName.slice(1),
@@ -202,7 +200,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Pattern 2: Set [Item Name] [qty] or Out of Stock
         const setMatch = text.match(/set\s+(.+)\s+(\d+)/i);
         if (setMatch) {
             const itemName = setMatch[1].trim();
@@ -221,7 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        logTerminalCommand(`⚠️ Unrecognized Command. Try: "Add 10 Paracetamol", "Set Oxygen 5", or "Add 2 O-Negative Blood"`);
+        logTerminalCommand(`⚠️ Unrecognized Command. Try: "Add 10 Paracetamol", "Set Oxygen 5"`);
     }
 
     function logTerminalCommand(msg) {
@@ -239,7 +236,6 @@ document.addEventListener('DOMContentLoaded', () => {
             background: ${type === 'success' ? '#10b981' : '#0284c7'};
             color: white; padding: 12px 20px; border-radius: 8px; font-weight: 600;
             box-shadow: 0 10px 25px rgba(0,0,0,0.5); font-family: sans-serif;
-            animation: fadeIn 0.3s ease;
         `;
         toast.textContent = msg;
         document.body.appendChild(toast);

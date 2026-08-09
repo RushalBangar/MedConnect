@@ -1,6 +1,6 @@
 /**
  * MedConnect - Citizen Portal Application Controller
- * Handles Search, AI Prescription Scanning, Live Real-Time Rendering, and Proximity Routing
+ * Multilingual (i18n), Light/Dark Theme, Search & Proximity Routing
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -41,6 +41,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Subscribe to Store Updates
         store.subscribe((pharmacies) => {
             renderCitizenResults(pharmacies);
+        });
+
+        // Re-render results on Language change
+        window.addEventListener('languageChanged', () => {
+            renderCitizenResults(store.getAllPharmacies());
         });
 
         setupEventListeners();
@@ -156,7 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
         scanResultsArea.innerHTML = `
             <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
                 <h4 style="color: #10b981; margin-bottom: 4px;">✅ AI Extraction Complete</h4>
-                <p style="font-size: 0.85rem; color: #cbd5e1;">Identified ${lastExtractedMedicines.length} emergency items from prescription handwriting:</p>
+                <p style="font-size: 0.85rem; color: var(--text-muted);">Identified ${lastExtractedMedicines.length} emergency items from prescription handwriting:</p>
                 <div class="extracted-tags">${tagsHtml}</div>
             </div>
         `;
@@ -166,8 +171,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderCitizenResults(pharmacies) {
         if (!resultsContainer) return;
+        const i18n = window.i18n;
 
-        // Filter Pharmacies & Items based on search term & category
         let filteredPharmacies = pharmacies.map(pharmacy => {
             const distanceData = mapInstance.calculateDistance(
                 mapInstance.userLocation.lat,
@@ -176,7 +181,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 pharmacy.lng
             );
 
-            // Filter Inventory
             const matchingInventory = pharmacy.inventory.filter(item => {
                 const matchesQuery = !currentSearchTerm || 
                     item.name.toLowerCase().includes(currentSearchTerm.toLowerCase()) ||
@@ -199,24 +203,22 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         });
 
-        // Exclude pharmacies with 0 matching items if active search term is present
         if (currentSearchTerm || currentFilterCategory !== 'ALL') {
             filteredPharmacies = filteredPharmacies.filter(p => p.matchingInventory.length > 0);
         }
 
-        // Sort by nearest travel distance
         filteredPharmacies.sort((a, b) => a.distanceKm - b.distanceKm);
 
         if (resultsCountEl) {
-            resultsCountEl.textContent = `Found ${filteredPharmacies.length} locations matching your query`;
+            resultsCountEl.textContent = `${i18n.t('nearby_title')}: ${filteredPharmacies.length}`;
         }
 
         if (filteredPharmacies.length === 0) {
             resultsContainer.innerHTML = `
                 <div style="background: var(--bg-card); padding: 3rem 1.5rem; text-align: center; border-radius: 16px; border: 1px solid var(--border-color);">
                     <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
-                    <h3 style="color: white; margin-bottom: 0.5rem;">No Stock Found</h3>
-                    <p style="color: #94a3b8; font-size: 0.95rem;">No local pharmacy or blood bank currently lists <strong>"${currentSearchTerm}"</strong> in stock.</p>
+                    <h3 style="color: var(--heading-color); margin-bottom: 0.5rem;">${i18n.t('out_of_stock')}</h3>
+                    <p style="color: var(--text-muted); font-size: 0.95rem;">No items matching <strong>"${currentSearchTerm}"</strong>.</p>
                 </div>
             `;
             mapInstance.renderPharmacyMarkers([], currentSearchTerm);
@@ -230,7 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="item-pill ${currentSearchTerm && item.name.toLowerCase().includes(currentSearchTerm.toLowerCase()) ? 'match' : ''}">
                     <span>${item.name}</span>
                     <span class="pill-qty ${item.inStock ? (item.quantity > 5 ? 'qty-available' : 'qty-low') : 'qty-none'}">
-                        ${item.inStock ? `${item.quantity} ${item.unit}` : 'Out of Stock'} • ${item.price}
+                        ${item.inStock ? `${item.quantity} ${item.unit}` : i18n.t('out_of_stock')} • ${item.price}
                     </span>
                 </div>
             `).join('');
@@ -242,7 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="pharmacy-name">${pharmacy.name}</div>
                             <div class="pharmacy-meta">
                                 <span>📍 ${pharmacy.address}</span>
-                                ${pharmacy.isOpen247 ? '<span style="color:#10b981; font-weight:700;">• 24/7 Open</span>' : ''}
+                                ${pharmacy.isOpen247 ? `<span style="color:#10b981; font-weight:700;">• ${i18n.t('open_247')}</span>` : ''}
                             </div>
                         </div>
                         <div class="distance-badge">
@@ -256,20 +258,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     <div class="card-actions">
                         <a href="tel:${pharmacy.phone}" class="btn btn-sm btn-primary">
-                            📞 Call Store
+                            ${i18n.t('call_store')}
                         </a>
                         <button onclick="focusPharmacyOnMap('${pharmacy.id}', ${pharmacy.lat}, ${pharmacy.lng})" class="btn btn-sm btn-outline">
-                            📍 View on Map
+                            ${i18n.t('view_on_map')}
                         </button>
-                        <span style="font-size:0.75rem; color:#64748b; margin-left:auto;">
-                            Updated ${formatTimeAgo(pharmacy.lastUpdated)}
+                        <span style="font-size:0.75rem; color:var(--text-dim); margin-left:auto;">
+                            ${formatTimeAgo(pharmacy.lastUpdated)}
                         </span>
                     </div>
                 </div>
             `;
         }).join('');
 
-        // Update Map Markers
         mapInstance.renderPharmacyMarkers(filteredPharmacies, currentSearchTerm);
     }
 
@@ -280,12 +281,12 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function formatTimeAgo(isoString) {
-        if (!isoString) return 'Just now';
+        if (!isoString) return window.i18n.t('updated_just_now');
         const diffMs = Date.now() - new Date(isoString).getTime();
         const mins = Math.floor(diffMs / 60000);
-        if (mins < 1) return 'Just now';
-        if (mins < 60) return `${mins}m ago`;
-        return `${Math.floor(mins / 60)}h ago`;
+        if (mins < 1) return window.i18n.t('updated_just_now');
+        if (mins < 60) return `${mins}m ${window.i18n.t('updated_ago')}`;
+        return `${Math.floor(mins / 60)}h ${window.i18n.t('updated_ago')}`;
     }
 
     initApp();

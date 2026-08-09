@@ -1,12 +1,13 @@
 /**
  * MedConnect - Interactive Map & Proximity Routing Module
- * Uses Leaflet.js and OpenStreetMap for real-time map rendering and distance sorting.
+ * Uses Leaflet.js and OpenStreetMap with dynamic Light/Dark theme tile layer switching.
  */
 
 class MedConnectMap {
     constructor(elementId = 'map') {
         this.elementId = elementId;
         this.map = null;
+        this.tileLayer = null;
         this.markers = {};
         this.userLocation = { lat: 20.0000, lng: 73.7800, label: "Current Location (Nashik City)" };
         this.init();
@@ -23,15 +24,35 @@ class MedConnectMap {
             zoomControl: true
         });
 
-        // Add Dark Theme Tile Layer from CartoDB or OpenStreetMap
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        // Initial Tile Layer setup based on active theme
+        this.updateTileLayer(document.documentElement.getAttribute('data-theme') || 'dark');
+
+        // Add User Location Marker
+        this.addUserMarker();
+
+        // Listen for Theme Change Event
+        window.addEventListener('themeChanged', (e) => {
+            if (e.detail && e.detail.theme) {
+                this.updateTileLayer(e.detail.theme);
+            }
+        });
+    }
+
+    updateTileLayer(themeName) {
+        if (!this.map) return;
+        if (this.tileLayer) {
+            this.map.removeLayer(this.tileLayer);
+        }
+
+        const tileUrl = themeName === 'dark' 
+            ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+            : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+
+        this.tileLayer = L.tileLayer(tileUrl, {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
             subdomains: 'abcd',
             maxZoom: 19
         }).addTo(this.map);
-
-        // Add User Location Marker
-        this.addUserMarker();
     }
 
     addUserMarker() {
@@ -80,9 +101,9 @@ class MedConnectMap {
 
             const customIcon = L.divIcon({
                 className: 'pharmacy-map-pin',
-                html: `<div style="background: ${statusColor}; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; border: 2px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.4);">🏥</div>`,
-                iconSize: [30, 30],
-                iconAnchor: [15, 15]
+                html: `<div style="background: ${statusColor}; color: white; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 15px; border: 2px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.4);">🏥</div>`,
+                iconSize: [32, 32],
+                iconAnchor: [16, 16]
             });
 
             const distanceInfo = this.calculateDistance(this.userLocation.lat, this.userLocation.lng, pharmacy.lat, pharmacy.lng);
@@ -92,7 +113,7 @@ class MedConnectMap {
                     <h4 style="margin: 0 0 4px 0; font-size: 14px; color: #0f172a;">${pharmacy.name}</h4>
                     <p style="margin: 0 0 6px 0; font-size: 12px; color: #64748b;">${pharmacy.address}</p>
                     <div style="display: flex; gap: 6px; font-size: 11px; margin-bottom: 8px;">
-                        <span style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-weight: 600;">🚗 ${distanceInfo.distanceKm} km (${distanceInfo.travelTimeMin} mins)</span>
+                        <span style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-weight: 600; color: #1e293b;">🚗 ${distanceInfo.distanceKm} km (${distanceInfo.travelTimeMin} mins)</span>
                         <span style="background: ${statusColor}22; color: ${statusColor}; padding: 2px 6px; border-radius: 4px; font-weight: 700;">${statusText}</span>
                     </div>
                     <a href="tel:${pharmacy.phone}" style="display: inline-block; background: #0284c7; color: white; text-decoration: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600;">📞 Call Store</a>
@@ -115,7 +136,6 @@ class MedConnectMap {
         }
     }
 
-    // Haversine formula to compute travel distance & time
     calculateDistance(lat1, lon1, lat2, lon2) {
         const R = 6371; // Earth's radius in KM
         const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -127,8 +147,6 @@ class MedConnectMap {
         
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         const distanceKm = (R * c).toFixed(1);
-        
-        // Estimated city driving travel time (assuming ~25 km/h average city speed in emergency)
         const travelTimeMin = Math.round((distanceKm / 25) * 60) || 3;
 
         return { distanceKm, travelTimeMin };

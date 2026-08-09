@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,19 +15,31 @@
             <a href="index.html" class="brand-logo">
                 <div class="logo-icon">🏥</div>
                 <div>
-                    MedConnect Vendor Portal
-                    <span class="brand-tagline">Real-Time Inventory Manager</span>
+                    <span data-i18n="vendor_title">MedConnect Vendor Portal</span>
+                    <span class="brand-tagline" data-i18n="vendor_subtitle">Real-Time Inventory Manager</span>
                 </div>
             </a>
 
             <div class="nav-actions">
+                <!-- Language Selector -->
+                <select class="language-select" aria-label="Select Language">
+                    <option value="en">English (EN)</option>
+                    <option value="mr">मराठी (MR)</option>
+                    <option value="hi">हिन्दी (HI)</option>
+                </select>
+
+                <!-- Theme Switcher Button -->
+                <button class="theme-toggle-btn" aria-label="Toggle Theme">
+                    <span id="theme-toggle-icon">🌙</span>
+                </button>
+
                 <div class="live-badge">
                     <span class="pulse-dot"></span>
-                    SYNCED TO CITIZEN PORTAL
+                    <span data-i18n="synced_to_citizen">SYNCED TO CITIZEN PORTAL</span>
                 </div>
 
                 <a href="index.html" class="btn btn-outline">
-                    👈 Back to Citizen Search
+                    <span data-i18n="back_to_citizen">👈 Back to Citizen Search</span>
                 </a>
             </div>
         </div>
@@ -37,13 +49,13 @@
     <div class="vendor-header-bar">
         <div style="max-width: 1300px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
             <div>
-                <h2 id="vendor-store-name" style="font-size: 1.5rem; color: white;">Apollo Pharmacy 24/7</h2>
-                <div id="vendor-store-address" style="font-size: 0.9rem; color: #94a3b8;">📍 College Road, Nashik</div>
+                <h2 id="vendor-store-name" style="font-size: 1.5rem;">Apollo Pharmacy 24/7</h2>
+                <div id="vendor-store-address" style="font-size: 0.9rem; color: var(--text-muted);">📍 College Road, Nashik</div>
             </div>
 
             <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <label style="font-size: 0.85rem; color: #94a3b8; font-weight: 600;">Switch Managed Pharmacy Store:</label>
-                <select id="pharmacy-selector" class="form-control" style="width: auto; background: #0f172a;">
+                <label style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;" data-i18n="switch_pharmacy_label">Switch Managed Pharmacy Store:</label>
+                <select id="pharmacy-selector" class="form-control" style="width: auto;">
                     <!-- Dynamically populated -->
                 </select>
             </div>
@@ -55,11 +67,11 @@
         <!-- Left Sidebar: Forms & Frictionless Commands -->
         <aside>
             <!-- Frictionless SMS / WhatsApp Command Simulator -->
-            <div style="background: var(--bg-card); border: 1px solid var(--border-accent); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem;">
-                <h3 style="font-size: 1.1rem; color: white; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.4rem;">
+            <div style="background: var(--bg-card); border: 1px solid var(--border-accent); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem; box-shadow: var(--shadow-soft);">
+                <h3 style="font-size: 1.1rem; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.4rem;" data-i18n="sms_title">
                     💬 Frictionless SMS / WhatsApp Updates
                 </h3>
-                <p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 1rem;">
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;" data-i18n="sms_desc">
                     Simulate updating inventory via Cloud Functions SMS/WhatsApp webhook without logging in.
                 </p>
 
@@ -69,48 +81,48 @@
                         <div>Type command e.g.: "Add 10 Paracetamol"</div>
                     </div>
                     <form id="command-form" class="terminal-input-row">
-                        <input type="text" id="command-input" class="form-control" placeholder="Add 15 Remdesivir" style="background: #0b1329; border-color: #334155; padding: 0.5rem 0.75rem; font-size: 0.85rem;" required>
+                        <input type="text" id="command-input" class="form-control" placeholder="Add 15 Remdesivir" style="background: #0b1329; border-color: #334155; padding: 0.5rem 0.75rem; font-size: 0.85rem; color: white;" required>
                         <button type="submit" class="btn btn-sm btn-primary">Send</button>
                     </form>
                 </div>
             </div>
 
             <!-- Add New Stock Item Form -->
-            <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem;">
-                <h3 style="font-size: 1.1rem; color: white; margin-bottom: 1rem;">➕ Add Item to Stock</h3>
+            <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; box-shadow: var(--shadow-soft);">
+                <h3 style="font-size: 1.1rem; margin-bottom: 1rem;" data-i18n="add_item_title">➕ Add Item to Stock</h3>
                 <form id="add-item-form">
                     <div class="form-group">
-                        <label class="form-label">Item / Medicine Name</label>
+                        <label class="form-label" data-i18n="item_name_label">Item / Medicine Name</label>
                         <input type="text" id="new-item-name" class="form-control" placeholder="e.g. Oxygen Cylinder (B-Type)" required>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Category</label>
+                        <label class="form-label" data-i18n="item_category_label">Category</label>
                         <select id="new-item-category" class="form-control">
-                            <option value="Medication">Medication / Drug</option>
-                            <option value="Oxygen">Oxygen Supply</option>
-                            <option value="Blood">Blood Unit</option>
-                            <option value="Equipment">ICU / Medical Equipment</option>
+                            <option value="Medication" data-i18n="category_med">Medication / Drug</option>
+                            <option value="Oxygen" data-i18n="category_oxy">Oxygen Supply</option>
+                            <option value="Blood" data-i18n="category_blood">Blood Unit</option>
+                            <option value="Equipment" data-i18n="category_eq">ICU / Medical Equipment</option>
                         </select>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                         <div class="form-group">
-                            <label class="form-label">Quantity</label>
+                            <label class="form-label" data-i18n="quantity_label">Quantity</label>
                             <input type="number" id="new-item-qty" class="form-control" placeholder="10" min="0" required>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Unit</label>
+                            <label class="form-label" data-i18n="unit_label">Unit</label>
                             <input type="text" id="new-item-unit" class="form-control" placeholder="strips, cylinders, vials">
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Price (INR)</label>
+                        <label class="form-label" data-i18n="price_label">Price (INR)</label>
                         <input type="text" id="new-item-price" class="form-control" placeholder="₹150">
                     </div>
 
-                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">
+                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;" data-i18n="publish_btn">
                         🚀 Publish to Live Citizen Search
                     </button>
                 </form>
@@ -118,11 +130,11 @@
         </aside>
 
         <!-- Right Main Column: Live Inventory Table -->
-        <section style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem;">
+        <section style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; box-shadow: var(--shadow-soft);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                 <div>
-                    <h3 style="font-size: 1.2rem; color: white;">Live Stock Inventory</h3>
-                    <p style="font-size: 0.85rem; color: #94a3b8;">Changes made here instantly reflect in real-time on citizen search results.</p>
+                    <h3 style="font-size: 1.2rem;" data-i18n="live_inventory_title">Live Stock Inventory</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);" data-i18n="live_inventory_desc">Changes made here instantly reflect in real-time on citizen search results.</p>
                 </div>
             </div>
 
@@ -130,11 +142,11 @@
                 <table class="inventory-table">
                     <thead>
                         <tr>
-                            <th>Item Name</th>
-                            <th>Stock Quantity</th>
-                            <th>Price</th>
-                            <th>Quick Status</th>
-                            <th>Action</th>
+                            <th data-i18n="th_item_name">Item Name</th>
+                            <th data-i18n="th_stock_qty">Stock Quantity</th>
+                            <th data-i18n="th_price">Price</th>
+                            <th data-i18n="th_status">Quick Status</th>
+                            <th data-i18n="th_action">Action</th>
                         </tr>
                     </thead>
                     <tbody id="inventory-table-body">
@@ -149,22 +161,22 @@
     <div id="vendor-auth-modal" class="modal-overlay">
         <div class="modal-container" style="max-width: 420px;">
             <div class="modal-header">
-                <h3 class="modal-title">🔐 Vendor Portal Authentication</h3>
+                <h3 class="modal-title" data-i18n="auth_title">🔐 Vendor Portal Authentication</h3>
             </div>
             <div class="modal-body">
-                <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 1.25rem;">
-                    Sign in to manage pharmacy stock. Powered by <strong>Firebase Authentication</strong>.
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;" data-i18n="auth_desc">
+                    Sign in to manage pharmacy stock. Powered by Firebase Authentication.
                 </p>
                 <form id="vendor-auth-form">
                     <div class="form-group">
-                        <label class="form-label">Pharmacy Email Address</label>
+                        <label class="form-label" data-i18n="email_label">Pharmacy Email Address</label>
                         <input type="email" id="auth-email" class="form-control" value="apollo.nashik@medconnect.org" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Password</label>
+                        <label class="form-label" data-i18n="password_label">Password</label>
                         <input type="password" id="auth-password" class="form-control" value="vendor12345" required>
                     </div>
-                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.75rem;">
+                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.75rem;" data-i18n="signin_btn">
                         Sign In to Vendor Dashboard
                     </button>
                 </form>
@@ -173,6 +185,8 @@
     </div>
 
     <!-- Application Scripts -->
+    <script src="js/i18n.js"></script>
+    <script src="js/theme.js"></script>
     <script src="js/data.js"></script>
     <script src="js/firebase-config.js"></script>
     <script src="js/vendor.js"></script>
