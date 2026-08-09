@@ -166,8 +166,13 @@
         <span id="cart-badge" class="cart-badge">0</span>
     </div>
 
+    </div>
+
+    <!-- Cart Backdrop -->
+    <div id="cart-backdrop" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:2050; backdrop-filter: blur(4px);"></div>
+
     <!-- Checkout Sidebar Modal -->
-    <div id="checkout-sidebar" class="sidebar-modal">
+    <div id="checkout-sidebar" class="sidebar-modal" style="z-index:2100;">
         <div class="sidebar-header">
             <h3 style="margin:0; font-size: 1.2rem;">🛒 Your Cart</h3>
             <button id="close-cart-btn" class="modal-close">&times;</button>
@@ -184,7 +189,7 @@
             <form id="checkout-form">
                 <input type="text" id="buyer-name" class="form-control" style="margin-bottom: 0.5rem;" placeholder="Full Name" required>
                 <input type="text" id="buyer-phone" class="form-control" style="margin-bottom: 0.5rem;" placeholder="Phone Number" required>
-                <textarea id="buyer-address" class="form-control" style="margin-bottom: 0.5rem;" placeholder="Delivery Address" required></textarea>
+                <textarea id="buyer-address" class="form-control" style="margin-bottom: 0.5rem; resize:vertical; min-height:70px;" placeholder="Delivery Address" required></textarea>
                 
                 <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Note: Online Payment simulates a successful transaction for demo purposes.</p>
                 <div style="display: flex; gap: 0.5rem;">
@@ -192,6 +197,17 @@
                     <button type="submit" id="pay-online-btn" class="btn btn-primary" style="flex:1;">💳 Pay Online</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Order Success Modal -->
+    <div id="order-success-modal" class="modal-overlay">
+        <div class="modal-container" style="max-width:380px; text-align:center; padding: 2.5rem;">
+            <div style="font-size:4rem; margin-bottom:1rem;">🎉</div>
+            <h2 style="color: var(--primary); margin-bottom: 0.5rem;">Order Confirmed!</h2>
+            <p style="color: var(--text-muted); font-size:0.95rem; margin-bottom: 0.5rem;">Your order has been placed successfully.</p>
+            <p style="color: var(--text-muted); font-size:0.85rem; margin-bottom: 1.5rem;">Vendors have been notified and will dispatch your order shortly.</p>
+            <button id="success-modal-close-btn" class="btn btn-primary" style="width:100%;">Continue Shopping</button>
         </div>
     </div>
 

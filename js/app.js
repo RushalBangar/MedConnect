@@ -30,12 +30,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Cart Elements
     const cartFab = document.getElementById('cart-fab');
     const cartBadge = document.getElementById('cart-badge');
+    const cartBackdrop = document.getElementById('cart-backdrop');
     const checkoutSidebar = document.getElementById('checkout-sidebar');
     const closeCartBtn = document.getElementById('close-cart-btn');
     const cartItemsContainer = document.getElementById('cart-items-container');
     const cartTotalPrice = document.getElementById('cart-total-price');
     const checkoutForm = document.getElementById('checkout-form');
     const payCodBtn = document.getElementById('pay-cod-btn');
+    const orderSuccessModal = document.getElementById('order-success-modal');
+    const successModalCloseBtn = document.getElementById('success-modal-close-btn');
 
     let lastExtractedMedicines = [];
 
@@ -129,8 +132,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Cart Listeners
-        if (cartFab) cartFab.addEventListener('click', () => checkoutSidebar.classList.add('active'));
-        if (closeCartBtn) closeCartBtn.addEventListener('click', () => checkoutSidebar.classList.remove('active'));
+        const openCart = () => { checkoutSidebar.classList.add('active'); if(cartBackdrop) cartBackdrop.style.display = 'block'; };
+        const closeCart = () => { checkoutSidebar.classList.remove('active'); if(cartBackdrop) cartBackdrop.style.display = 'none'; };
+
+        if (cartFab) cartFab.addEventListener('click', openCart);
+        if (closeCartBtn) closeCartBtn.addEventListener('click', closeCart);
+        if (cartBackdrop) cartBackdrop.addEventListener('click', closeCart);
+        if (successModalCloseBtn) successModalCloseBtn.addEventListener('click', () => orderSuccessModal.classList.remove('active'));
         
         if (payCodBtn) {
             payCodBtn.addEventListener('click', () => {
@@ -154,15 +162,31 @@ document.addEventListener('DOMContentLoaded', () => {
         const p = store.getPharmacyById(pharmacyId);
         if (p) {
             const item = p.inventory.find(i => i.id === itemId);
-            if (item && item.inStock) {
+            if (item && item.inStock && item.quantity > 0) {
                 store.addToCart(pharmacyId, item);
-                checkoutSidebar.classList.add('active'); // Auto open cart on add
+                // Open cart sidebar
+                checkoutSidebar.classList.add('active');
+                if (cartBackdrop) cartBackdrop.style.display = 'block';
             }
         }
     };
 
     window.handleRemoveFromCart = function(cartId) {
         store.removeFromCart(cartId);
+    };
+
+    window.handleQtyChange = function(cartId, delta) {
+        const cart = store.getCart();
+        const idx = cart.findIndex(c => c.cartId === cartId);
+        if (idx !== -1) {
+            const newQty = cart[idx].orderQty + delta;
+            if (newQty <= 0) {
+                store.removeFromCart(cartId);
+            } else {
+                cart[idx].orderQty = newQty;
+                store.saveCart(cart);
+            }
+        }
     };
 
     function processCheckout(isOnline) {
@@ -190,9 +214,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function completeOrderSuccess() {
         checkoutSidebar.classList.remove('active');
+        if (cartBackdrop) cartBackdrop.style.display = 'none';
         checkoutForm.reset();
         document.getElementById('pay-online-btn').innerHTML = '💳 Pay Online';
-        alert('🎉 Order Placed Successfully! Vendors have been notified.');
+        // Show beautiful success modal instead of alert
+        if (orderSuccessModal) orderSuccessModal.classList.add('active');
     }
 
     function renderCart(cart) {
@@ -219,15 +245,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const priceVal = parseInt(item.price.replace(/[^0-9]/g, ''), 10) || 0;
             const itemTotal = priceVal * item.orderQty;
             total += itemTotal;
+            // Fix grammar: "1 unit" vs "2 units"
+            const unitLabel = item.orderQty === 1 ? item.unit.replace(/s$/, '') : item.unit;
             
             return `
                 <div class="cart-item-row">
-                    <div>
-                        <div style="font-weight:700; font-size:0.95rem;">${item.name}</div>
-                        <div style="font-size:0.8rem; color:var(--text-muted);">${item.orderQty} ${item.unit} • ${item.price} each</div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-weight:700; font-size:0.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.name}</div>
+                        <div style="font-size:0.78rem; color:var(--text-muted);">${item.price} each • ₹${itemTotal.toLocaleString('en-IN')} total</div>
                     </div>
-                    <div>
-                        <button onclick="window.handleRemoveFromCart('${item.cartId}')" class="modal-close" style="color:var(--emergency); font-size:1.2rem;">&times;</button>
+                    <div style="display:flex; align-items:center; gap:0.4rem; flex-shrink:0;">
+                        <button onclick="window.handleQtyChange('${item.cartId}', -1)" style="width:26px; height:26px; border-radius:50%; background:var(--bg-input); border:1px solid var(--border-color); color:white; font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center;">-</button>
+                        <span style="font-weight:700; min-width:1.5rem; text-align:center;">${item.orderQty}</span>
+                        <button onclick="window.handleQtyChange('${item.cartId}', 1)" style="width:26px; height:26px; border-radius:50%; background:var(--primary); border:none; color:#042f2e; font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center;">+</button>
+                        <button onclick="window.handleRemoveFromCart('${item.cartId}')" class="modal-close" style="color:var(--emergency); font-size:1.2rem; margin-left:0.25rem;">&times;</button>
                     </div>
                 </div>
             `;
@@ -357,7 +388,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             ${isLow && item.inStock ? `${i18n.t('low_stock')}: ` : ''}
                             ${item.inStock ? `${formattedQty} ${translatedUnit}` : i18n.t('out_of_stock')} • ${item.price}
                         </div>
-                        ${item.inStock ? `<button class="btn-add-cart" onclick="window.handleAddToCart('${pharmacy.id}', '${item.id}')">🛒 Add</button>` : ''}
+                        ${(item.inStock && item.quantity > 0) ? `<button class="btn-add-cart" onclick="window.handleAddToCart('${pharmacy.id}', '${item.id}')">🛒 Add</button>` : ''}
                     </div>
                 `;
             }).join('');

@@ -979,43 +979,87 @@ footer {
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
     .nav-container {
-        flex-direction: column;
-        align-items: stretch;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.6rem 1rem;
     }
     
     .nav-actions {
         flex-wrap: wrap;
-        justify-content: center;
-        margin-top: 0.5rem;
+        justify-content: flex-end;
+        gap: 0.4rem;
+        margin-top: 0;
+        flex: 1;
+    }
+
+    /* Hide long text labels, show icon-only buttons on mobile */
+    .live-badge span:last-child {
+        display: none;
     }
 
     .app-content {
         display: flex;
         flex-direction: column-reverse;
-        padding: 0 1rem 3rem 1rem;
+        padding: 0 0.75rem 5rem 0.75rem;
     }
 
     .map-panel {
-        height: 350px;
+        height: 280px;
         position: relative;
         top: 0;
-        margin-bottom: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .hero-section {
+        padding: 1.5rem 1rem 1rem;
     }
 
     .hero-title {
-        font-size: 1.8rem;
+        font-size: 1.6rem;
+        line-height: 1.2;
     }
 
     .search-input {
         padding-left: 2.8rem;
-        font-size: 0.95rem;
+        font-size: 0.9rem;
+    }
+
+    /* Fix filter chips: horizontal scroll instead of wrapping */
+    .filter-chips {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 0.5rem;
+        scrollbar-width: none;
+    }
+    .filter-chips::-webkit-scrollbar {
+        display: none;
+    }
+    .filter-chips .chip {
+        flex-shrink: 0;
+    }
+
+    /* Inventory item boxes: 2-column grid on mobile */
+    .inventory-grid-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+    .item-box {
+        min-width: unset;
     }
     
     .cart-fab {
         bottom: 1rem;
         right: 1rem;
-        width: 50px;
-        height: 50px;
-        font-size: 1.2rem;
+        width: 52px;
+        height: 52px;
+        font-size: 1.3rem;
+    }
+
+    /* Sidebar takes full screen on mobile */
+    .sidebar-modal {
+        max-width: 100%;
     }
 }
