@@ -37,6 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         window.addEventListener('languageChanged', () => {
+            populatePharmacySelector();
             renderVendorDashboard();
         });
     }
@@ -67,50 +68,60 @@ document.addEventListener('DOMContentLoaded', () => {
     function populatePharmacySelector() {
         if (!pharmacySelector) return;
         const pharmacies = store.getAllPharmacies();
-        pharmacySelector.innerHTML = pharmacies.map(p => 
-            `<option value="${p.id}" ${p.id === currentVendorPharmacyId ? 'selected' : ''}>${p.name} (${p.category})</option>`
-        ).join('');
+        pharmacySelector.innerHTML = pharmacies.map(pRaw => {
+            const p = i18n.translatePharmacy(pRaw);
+            const cat = i18n.translateCategory(p.category);
+            return `<option value="${p.id}" ${p.id === currentVendorPharmacyId ? 'selected' : ''}>${p.name} (${cat})</option>`;
+        }).join('');
 
-        pharmacySelector.addEventListener('change', (e) => {
+        pharmacySelector.onchange = (e) => {
             currentVendorPharmacyId = e.target.value;
             localStorage.setItem('medconnect_vendor_pharmacy_id', currentVendorPharmacyId);
             renderVendorDashboard();
-        });
+        };
     }
 
     function renderVendorDashboard() {
-        const pharmacy = store.getPharmacyById(currentVendorPharmacyId);
-        if (!pharmacy) return;
+        const pharmacyRaw = store.getPharmacyById(currentVendorPharmacyId);
+        if (!pharmacyRaw) return;
+
+        const pharmacy = i18n.translatePharmacy(pharmacyRaw);
 
         if (storeNameHeader) storeNameHeader.textContent = pharmacy.name;
         if (storeAddressHeader) storeAddressHeader.textContent = `📍 ${pharmacy.address} | 📞 ${pharmacy.phone}`;
 
         if (!inventoryTableBody) return;
 
-        inventoryTableBody.innerHTML = pharmacy.inventory.map(item => `
-            <tr>
-                <td>
-                    <strong style="color: var(--heading-color);">${item.name}</strong>
-                    <div style="font-size: 0.75rem; color: var(--text-dim);">${item.category}</div>
-                </td>
-                <td>
-                    <span class="pill-qty ${item.inStock ? (item.quantity > 5 ? 'qty-available' : 'qty-low') : 'qty-none'}">
-                        ${item.inStock ? `${item.quantity} ${item.unit}` : i18n.t('out_of_stock')}
-                    </span>
-                </td>
-                <td>${item.price}</td>
-                <td>
-                    <button onclick="toggleStockStatus('${item.id}', ${!item.inStock})" class="btn btn-sm ${item.inStock ? 'btn-outline' : 'btn-emergency'}">
-                        ${item.inStock ? i18n.t('mark_out_stock') : i18n.t('mark_in_stock')}
-                    </button>
-                </td>
-                <td>
-                    <button onclick="deleteItem('${item.id}')" class="btn btn-sm btn-ghost" style="color: #ef4444;">
-                        ${i18n.t('delete_btn')}
-                    </button>
-                </td>
-            </tr>
-        `).join('');
+        inventoryTableBody.innerHTML = pharmacy.inventory.map(item => {
+            const translatedName = i18n.translateItemName(item.name);
+            const translatedUnit = i18n.translateUnit(item.unit);
+            const translatedCat = i18n.translateCategory(item.category);
+
+            return `
+                <tr>
+                    <td>
+                        <strong style="color: var(--heading-color);">${translatedName}</strong>
+                        <div style="font-size: 0.75rem; color: var(--text-dim);">${translatedCat}</div>
+                    </td>
+                    <td>
+                        <span class="pill-qty ${item.inStock ? (item.quantity > 5 ? 'qty-available' : 'qty-low') : 'qty-none'}">
+                            ${item.inStock ? `${item.quantity} ${translatedUnit}` : i18n.t('out_of_stock')}
+                        </span>
+                    </td>
+                    <td>${item.price}</td>
+                    <td>
+                        <button onclick="toggleStockStatus('${item.id}', ${!item.inStock})" class="btn btn-sm ${item.inStock ? 'btn-outline' : 'btn-emergency'}">
+                            ${item.inStock ? i18n.t('mark_out_stock') : i18n.t('mark_in_stock')}
+                        </button>
+                    </td>
+                    <td>
+                        <button onclick="deleteItem('${item.id}')" class="btn btn-sm btn-ghost" style="color: #ef4444;">
+                            ${i18n.t('delete_btn')}
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
     }
 
     window.toggleStockStatus = function(itemId, newStatus) {

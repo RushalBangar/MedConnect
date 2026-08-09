@@ -1,6 +1,6 @@
 /**
  * MedConnect - Citizen Portal Application Controller
- * Multilingual (i18n), Light/Dark Theme, Search & Proximity Routing
+ * Matching screen.png Card Layout, Twin Mint Action Buttons, Heatmap Toggle
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -30,20 +30,16 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastExtractedMedicines = [];
 
     function initApp() {
-        // Initialize Map
         mapInstance = new window.MedConnectMap('map');
         
-        // Initialize AI Scanner
         if (window.AIPrescriptionScanner) {
             aiScanner = new window.AIPrescriptionScanner();
         }
 
-        // Subscribe to Store Updates
         store.subscribe((pharmacies) => {
             renderCitizenResults(pharmacies);
         });
 
-        // Re-render results on Language change
         window.addEventListener('languageChanged', () => {
             renderCitizenResults(store.getAllPharmacies());
         });
@@ -52,7 +48,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function setupEventListeners() {
-        // Search Input Handler
         if (searchInput) {
             searchInput.addEventListener('input', (e) => {
                 currentSearchTerm = e.target.value.trim();
@@ -60,7 +55,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Filter Chips
         filterChips.forEach(chip => {
             chip.addEventListener('click', () => {
                 filterChips.forEach(c => c.classList.remove('active'));
@@ -70,7 +64,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        // AI Scanner Modal Handlers
         if (openScannerBtn && scannerModal) {
             openScannerBtn.addEventListener('click', () => scannerModal.classList.add('active'));
         }
@@ -78,7 +71,6 @@ document.addEventListener('DOMContentLoaded', () => {
             closeScannerBtn.addEventListener('click', () => scannerModal.classList.remove('active'));
         }
 
-        // File Dropzone Handlers
         if (dropzone && fileInput) {
             dropzone.addEventListener('click', () => fileInput.click());
 
@@ -102,7 +94,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Sample Prescription Buttons
         sampleButtons.forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -111,7 +102,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        // Auto Search Execution Button
         if (autoSearchBtn) {
             autoSearchBtn.addEventListener('click', () => {
                 if (lastExtractedMedicines.length > 0) {
@@ -154,7 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const tagsHtml = lastExtractedMedicines.map(m => `
             <span class="tag-badge">
-                💊 ${m.name} <small>(${m.confidence})</small>
+                💊 ${window.i18n.translateItemName(m.name)} <small>(${m.confidence})</small>
             </span>
         `).join('');
 
@@ -184,6 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const matchingInventory = pharmacy.inventory.filter(item => {
                 const matchesQuery = !currentSearchTerm || 
                     item.name.toLowerCase().includes(currentSearchTerm.toLowerCase()) ||
+                    i18n.translateItemName(item.name).toLowerCase().includes(currentSearchTerm.toLowerCase()) ||
                     item.category.toLowerCase().includes(currentSearchTerm.toLowerCase());
                 
                 const matchesCategory = currentFilterCategory === 'ALL' || 
@@ -210,7 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
         filteredPharmacies.sort((a, b) => a.distanceKm - b.distanceKm);
 
         if (resultsCountEl) {
-            resultsCountEl.textContent = `${i18n.t('nearby_title')}: ${filteredPharmacies.length}`;
+            resultsCountEl.textContent = `${i18n.t('nearby_title')}: ${i18n.toDevanagari(filteredPharmacies.length)}`;
         }
 
         if (filteredPharmacies.length === 0) {
@@ -225,47 +216,59 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        resultsContainer.innerHTML = filteredPharmacies.map(pharmacy => {
-            const hasStockItems = pharmacy.matchingInventory.some(i => i.inStock);
+        resultsContainer.innerHTML = filteredPharmacies.map((pharmacyRaw, idx) => {
+            const pharmacy = i18n.translatePharmacy(pharmacyRaw);
+            const isSatu = idx === 0 || pharmacy.isOpen247;
+            const statusBadgeClass = isSatu ? 'satu' : 'amber';
+            const statusBadgeText = isSatu ? i18n.t('satu') : i18n.t('amber');
 
-            const inventoryPills = pharmacy.matchingInventory.map(item => `
-                <div class="item-pill ${currentSearchTerm && item.name.toLowerCase().includes(currentSearchTerm.toLowerCase()) ? 'match' : ''}">
-                    <span>${item.name}</span>
-                    <span class="pill-qty ${item.inStock ? (item.quantity > 5 ? 'qty-available' : 'qty-low') : 'qty-none'}">
-                        ${item.inStock ? `${item.quantity} ${item.unit}` : i18n.t('out_of_stock')} • ${item.price}
-                    </span>
-                </div>
-            `).join('');
+            const itemBoxes = pharmacy.matchingInventory.map(item => {
+                const translatedName = i18n.translateItemName(item.name);
+                const translatedUnit = i18n.translateUnit(item.unit);
+                const formattedQty = i18n.toDevanagari(item.quantity);
+                const isLow = !item.inStock || item.quantity <= 5;
+                const boxClass = isLow ? 'amber' : 'emerald';
+
+                return `
+                    <div class="item-box ${boxClass}">
+                        <div class="item-box-title">${translatedName}</div>
+                        <div class="item-box-meta">
+                            ${isLow && item.inStock ? `${i18n.t('low_stock')}: ` : ''}
+                            ${item.inStock ? `${formattedQty} ${translatedUnit}` : i18n.t('out_of_stock')} • ${item.price}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            const mapsDirectionUrl = `https://www.google.com/maps/dir/?api=1&destination=${pharmacy.lat},${pharmacy.lng}`;
 
             return `
-                <div class="pharmacy-card ${hasStockItems ? 'has-stock' : 'out-of-stock'}">
-                    <div class="card-top">
-                        <div>
-                            <div class="pharmacy-name">${pharmacy.name}</div>
-                            <div class="pharmacy-meta">
-                                <span>📍 ${pharmacy.address}</span>
-                                ${pharmacy.isOpen247 ? `<span style="color:#10b981; font-weight:700;">• ${i18n.t('open_247')}</span>` : ''}
-                            </div>
-                        </div>
-                        <div class="distance-badge">
-                            🚗 ${pharmacy.distanceKm} km (${pharmacy.travelTimeMin} mins)
-                        </div>
+                <div class="pharmacy-card">
+                    <div class="card-header-row">
+                        <div class="pharmacy-title">${pharmacy.name}</div>
+                        <span class="status-pill ${statusBadgeClass}">${statusBadgeText}</span>
                     </div>
 
-                    <div class="inventory-pills">
-                        ${inventoryPills}
+                    <div class="card-subtitle">
+                        📍 ${pharmacy.address}
                     </div>
 
-                    <div class="card-actions">
-                        <a href="tel:${pharmacy.phone}" class="btn btn-sm btn-primary">
+                    <div class="card-status-bar">
+                        <span>🕒 ${i18n.t('status')} • <strong style="color: ${pharmacy.isOpen247 ? '#34d399' : '#f87171'}">${pharmacy.isOpen247 ? i18n.t('open') : i18n.t('closed')}</strong></span>
+                        <span class="pill-tag">${i18n.t('pharmacy_tag')}</span>
+                    </div>
+
+                    <div class="inventory-grid-row">
+                        ${itemBoxes}
+                    </div>
+
+                    <div class="card-actions-twin">
+                        <a href="tel:${pharmacy.phone}" class="btn-twin">
                             ${i18n.t('call_store')}
                         </a>
-                        <button onclick="focusPharmacyOnMap('${pharmacy.id}', ${pharmacy.lat}, ${pharmacy.lng})" class="btn btn-sm btn-outline">
-                            ${i18n.t('view_on_map')}
-                        </button>
-                        <span style="font-size:0.75rem; color:var(--text-dim); margin-left:auto;">
-                            ${formatTimeAgo(pharmacy.lastUpdated)}
-                        </span>
+                        <a href="${mapsDirectionUrl}" target="_blank" rel="noopener" class="btn-twin">
+                            ${i18n.t('get_directions')}
+                        </a>
                     </div>
                 </div>
             `;
@@ -285,8 +288,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const diffMs = Date.now() - new Date(isoString).getTime();
         const mins = Math.floor(diffMs / 60000);
         if (mins < 1) return window.i18n.t('updated_just_now');
-        if (mins < 60) return `${mins}m ${window.i18n.t('updated_ago')}`;
-        return `${Math.floor(mins / 60)}h ${window.i18n.t('updated_ago')}`;
+        if (mins < 60) return `${window.i18n.toDevanagari(mins)}m ${window.i18n.t('updated_ago')}`;
+        return `${window.i18n.toDevanagari(Math.floor(mins / 60))}h ${window.i18n.t('updated_ago')}`;
     }
 
     initApp();
