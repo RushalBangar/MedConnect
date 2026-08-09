@@ -22,6 +22,9 @@ class RealtimeStore {
         this.broadcastChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel(this.channelName) : null;
         this.listeners = [];
         this.isFirebaseActive = false;
+        this.cartStorageKey = 'medconnect_cart';
+        this.ordersStorageKey = 'medconnect_orders';
+        this.cartListeners = [];
         
         this.init();
     }
@@ -143,6 +146,130 @@ class RealtimeStore {
         if (window.SEED_PHARMACIES) {
             this.saveAll(window.SEED_PHARMACIES);
         }
+    }
+
+    // --- E-Commerce / Cart Methods ---
+
+    getCart() {
+        try {
+            const data = localStorage.getItem(this.cartStorageKey);
+            return data ? JSON.parse(data) : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    saveCart(cart) {
+        localStorage.setItem(this.cartStorageKey, JSON.stringify(cart));
+        this.notifyCartListeners(cart);
+    }
+
+    addToCart(pharmacyId, itemData) {
+        const cart = this.getCart();
+        const existingIdx = cart.findIndex(c => c.itemId === itemData.id && c.pharmacyId === pharmacyId);
+        if (existingIdx !== -1) {
+            cart[existingIdx].orderQty += 1;
+        } else {
+            cart.push({
+                cartId: `cart-${Date.now()}`,
+                pharmacyId: pharmacyId,
+                itemId: itemData.id,
+                name: itemData.name,
+                price: itemData.price,
+                unit: itemData.unit,
+                orderQty: 1
+            });
+        }
+        this.saveCart(cart);
+    }
+
+    removeFromCart(cartId) {
+        const cart = this.getCart().filter(c => c.cartId !== cartId);
+        this.saveCart(cart);
+    }
+
+    clearCart() {
+        this.saveCart([]);
+    }
+
+    subscribeCart(callback) {
+        this.cartListeners.push(callback);
+        callback(this.getCart());
+        return () => {
+            this.cartListeners = this.cartListeners.filter(cb => cb !== callback);
+        };
+    }
+
+    notifyCartListeners(cart) {
+        this.cartListeners.forEach(cb => {
+            try { cb(cart); } catch(err) { console.error(err); }
+        });
+    }
+
+    // --- Orders Methods ---
+
+    getAllOrders() {
+        try {
+            const data = localStorage.getItem(this.ordersStorageKey);
+            return data ? JSON.parse(data) : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    saveOrders(orders) {
+        localStorage.setItem(this.ordersStorageKey, JSON.stringify(orders));
+        if (this.broadcastChannel) {
+            this.broadcastChannel.postMessage({ type: 'ORDER_UPDATE', timestamp: Date.now() });
+        }
+    }
+
+    checkout(buyerDetails) {
+        const cart = this.getCart();
+        if (cart.length === 0) return { success: false, error: 'Cart is empty' };
+
+        // 1. Deduct Inventory & Group Orders by Pharmacy
+        let pharmacies = this.getAllPharmacies();
+        const orders = this.getAllOrders();
+        
+        cart.forEach(cartItem => {
+            const pIdx = pharmacies.findIndex(p => p.id === cartItem.pharmacyId);
+            if (pIdx !== -1) {
+                const iIdx = pharmacies[pIdx].inventory.findIndex(i => i.id === cartItem.itemId);
+                if (iIdx !== -1) {
+                    const currentQty = pharmacies[pIdx].inventory[iIdx].quantity;
+                    const newQty = Math.max(0, currentQty - cartItem.orderQty);
+                    pharmacies[pIdx].inventory[iIdx].quantity = newQty;
+                    if (newQty === 0) pharmacies[pIdx].inventory[iIdx].inStock = false;
+                }
+            }
+            
+            // Create Order Record
+            orders.push({
+                orderId: `ORD-${Date.now()}-${Math.floor(Math.random()*1000)}`,
+                pharmacyId: cartItem.pharmacyId,
+                itemName: cartItem.name,
+                orderQty: cartItem.orderQty,
+                unit: cartItem.unit,
+                price: cartItem.price,
+                buyerName: buyerDetails.name,
+                buyerPhone: buyerDetails.phone,
+                buyerAddress: buyerDetails.address,
+                timestamp: new Date().toISOString(),
+                status: 'Pending'
+            });
+        });
+
+        // Save changes
+        this.saveAll(pharmacies); // Deducts inventory globally
+        this.saveOrders(orders);
+        this.clearCart();
+        
+        return { success: true };
+    }
+
+    getOrdersForPharmacy(pharmacyId) {
+        return this.getAllOrders().filter(o => o.pharmacyId === pharmacyId).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
     }
 }
 

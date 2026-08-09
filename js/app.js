@@ -27,6 +27,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const scanResultsArea = document.getElementById('scan-results-area');
     const autoSearchBtn = document.getElementById('auto-search-btn');
 
+    // Cart Elements
+    const cartFab = document.getElementById('cart-fab');
+    const cartBadge = document.getElementById('cart-badge');
+    const checkoutSidebar = document.getElementById('checkout-sidebar');
+    const closeCartBtn = document.getElementById('close-cart-btn');
+    const cartItemsContainer = document.getElementById('cart-items-container');
+    const cartTotalPrice = document.getElementById('cart-total-price');
+    const checkoutForm = document.getElementById('checkout-form');
+    const payCodBtn = document.getElementById('pay-cod-btn');
+
     let lastExtractedMedicines = [];
 
     function initApp() {
@@ -42,6 +52,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         window.addEventListener('languageChanged', () => {
             renderCitizenResults(store.getAllPharmacies());
+        });
+
+        store.subscribeCart((cart) => {
+            renderCart(cart);
         });
 
         setupEventListeners();
@@ -113,6 +127,113 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
+
+        // Cart Listeners
+        if (cartFab) cartFab.addEventListener('click', () => checkoutSidebar.classList.add('active'));
+        if (closeCartBtn) closeCartBtn.addEventListener('click', () => checkoutSidebar.classList.remove('active'));
+        
+        if (payCodBtn) {
+            payCodBtn.addEventListener('click', () => {
+                if (checkoutForm.checkValidity()) {
+                    processCheckout(false);
+                } else {
+                    checkoutForm.reportValidity();
+                }
+            });
+        }
+
+        if (checkoutForm) {
+            checkoutForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                processCheckout(true);
+            });
+        }
+    }
+
+    window.handleAddToCart = function(pharmacyId, itemId) {
+        const p = store.getPharmacyById(pharmacyId);
+        if (p) {
+            const item = p.inventory.find(i => i.id === itemId);
+            if (item && item.inStock) {
+                store.addToCart(pharmacyId, item);
+                checkoutSidebar.classList.add('active'); // Auto open cart on add
+            }
+        }
+    };
+
+    window.handleRemoveFromCart = function(cartId) {
+        store.removeFromCart(cartId);
+    };
+
+    function processCheckout(isOnline) {
+        const buyerName = document.getElementById('buyer-name').value;
+        const buyerPhone = document.getElementById('buyer-phone').value;
+        const buyerAddress = document.getElementById('buyer-address').value;
+
+        if (isOnline) {
+            // Simulate Payment Gateway
+            const btn = document.getElementById('pay-online-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '⏳ Processing Payment...';
+            setTimeout(() => {
+                const res = store.checkout({ name: buyerName, phone: buyerPhone, address: buyerAddress });
+                if (res.success) {
+                    btn.innerHTML = '✅ Payment Successful!';
+                    setTimeout(() => completeOrderSuccess(), 1500);
+                }
+            }, 2000);
+        } else {
+            const res = store.checkout({ name: buyerName, phone: buyerPhone, address: buyerAddress });
+            if (res.success) completeOrderSuccess();
+        }
+    }
+
+    function completeOrderSuccess() {
+        checkoutSidebar.classList.remove('active');
+        checkoutForm.reset();
+        document.getElementById('pay-online-btn').innerHTML = '💳 Pay Online';
+        alert('🎉 Order Placed Successfully! Vendors have been notified.');
+    }
+
+    function renderCart(cart) {
+        if (!cartFab || !cartBadge) return;
+        
+        if (cart.length > 0) {
+            cartFab.style.display = 'flex';
+            cartBadge.textContent = cart.reduce((acc, item) => acc + item.orderQty, 0);
+        } else {
+            cartFab.style.display = 'none';
+            checkoutSidebar.classList.remove('active');
+        }
+
+        if (!cartItemsContainer) return;
+
+        if (cart.length === 0) {
+            cartItemsContainer.innerHTML = '<p style="text-align:center; color:var(--text-muted); margin-top:2rem;">Your cart is empty.</p>';
+            cartTotalPrice.textContent = '₹0';
+            return;
+        }
+
+        let total = 0;
+        cartItemsContainer.innerHTML = cart.map(item => {
+            const priceVal = parseInt(item.price.replace(/[^0-9]/g, ''), 10) || 0;
+            const itemTotal = priceVal * item.orderQty;
+            total += itemTotal;
+            
+            return `
+                <div class="cart-item-row">
+                    <div>
+                        <div style="font-weight:700; font-size:0.95rem;">${item.name}</div>
+                        <div style="font-size:0.8rem; color:var(--text-muted);">${item.orderQty} ${item.unit} • ${item.price} each</div>
+                    </div>
+                    <div>
+                        <button onclick="window.handleRemoveFromCart('${item.cartId}')" class="modal-close" style="color:var(--emergency); font-size:1.2rem;">&times;</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        cartTotalPrice.textContent = `₹${total.toLocaleString('en-IN')}`;
     }
 
     async function processPrescriptionFile(file) {
@@ -236,6 +357,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             ${isLow && item.inStock ? `${i18n.t('low_stock')}: ` : ''}
                             ${item.inStock ? `${formattedQty} ${translatedUnit}` : i18n.t('out_of_stock')} • ${item.price}
                         </div>
+                        ${item.inStock ? `<button class="btn-add-cart" onclick="window.handleAddToCart('${pharmacy.id}', '${item.id}')">🛒 Add</button>` : ''}
                     </div>
                 `;
             }).join('');

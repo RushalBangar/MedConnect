@@ -160,6 +160,41 @@
         </div>
     </div>
 
+    <!-- Cart Floating Action Button -->
+    <div id="cart-fab" class="cart-fab" style="display: none;">
+        🛒
+        <span id="cart-badge" class="cart-badge">0</span>
+    </div>
+
+    <!-- Checkout Sidebar Modal -->
+    <div id="checkout-sidebar" class="sidebar-modal">
+        <div class="sidebar-header">
+            <h3 style="margin:0; font-size: 1.2rem;">🛒 Your Cart</h3>
+            <button id="close-cart-btn" class="modal-close">&times;</button>
+        </div>
+        <div id="cart-items-container" class="sidebar-body">
+            <!-- Rendered via JS -->
+        </div>
+        <div class="sidebar-footer">
+            <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 1rem;">
+                <span>Total:</span>
+                <span id="cart-total-price">₹0</span>
+            </div>
+            
+            <form id="checkout-form">
+                <input type="text" id="buyer-name" class="form-control" style="margin-bottom: 0.5rem;" placeholder="Full Name" required>
+                <input type="text" id="buyer-phone" class="form-control" style="margin-bottom: 0.5rem;" placeholder="Phone Number" required>
+                <textarea id="buyer-address" class="form-control" style="margin-bottom: 0.5rem;" placeholder="Delivery Address" required></textarea>
+                
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Note: Online Payment simulates a successful transaction for demo purposes.</p>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button type="button" id="pay-cod-btn" class="btn btn-outline" style="flex:1;">Cash on Delivery</button>
+                    <button type="submit" id="pay-online-btn" class="btn btn-primary" style="flex:1;">💳 Pay Online</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Footer -->
     <footer>
         <div style="max-width: 1300px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">

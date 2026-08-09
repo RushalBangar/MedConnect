@@ -39,7 +39,16 @@ document.addEventListener('DOMContentLoaded', () => {
         window.addEventListener('languageChanged', () => {
             populatePharmacySelector();
             renderVendorDashboard();
+            renderVendorOrders();
         });
+
+        if (store.broadcastChannel) {
+            store.broadcastChannel.addEventListener('message', (e) => {
+                if (e.data && e.data.type === 'ORDER_UPDATE') {
+                    renderVendorOrders();
+                }
+            });
+        }
     }
 
     function showAuthModal() {
@@ -82,6 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
             currentVendorPharmacyId = e.target.value;
             localStorage.setItem('medconnect_vendor_pharmacy_id', currentVendorPharmacyId);
             renderVendorDashboard();
+            renderVendorOrders();
         };
     }
 
@@ -145,6 +155,48 @@ document.addEventListener('DOMContentLoaded', () => {
         if (confirm("Are you sure you want to remove this item from your live inventory?")) {
             store.deleteInventoryItem(currentVendorPharmacyId, itemId);
             showNotification("Item removed from store inventory.");
+        }
+    };
+
+    function renderVendorOrders() {
+        const ordersTableBody = document.getElementById('orders-table-body');
+        if (!ordersTableBody) return;
+
+        const orders = store.getOrdersForPharmacy(currentVendorPharmacyId);
+
+        if (orders.length === 0) {
+            ordersTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 2rem; color: var(--text-muted);">No incoming orders yet.</td></tr>`;
+            return;
+        }
+
+        ordersTableBody.innerHTML = orders.map(order => {
+            const isPending = order.status === 'Pending';
+            return `
+                <tr>
+                    <td><strong style="color:var(--primary);">${order.orderId}</strong><br><small style="color:var(--text-muted);">${new Date(order.timestamp).toLocaleString()}</small></td>
+                    <td>
+                        <strong>${order.buyerName}</strong><br>
+                        📞 ${order.buyerPhone}<br>
+                        <small style="color:var(--text-muted);">${order.buyerAddress}</small>
+                    </td>
+                    <td>${order.itemName} x ${order.orderQty} ${order.unit}<br><strong style="color:var(--heading-color);">${order.price}</strong></td>
+                    <td><span class="status-pill ${isPending ? 'amber' : 'emerald'}">${order.status}</span></td>
+                    <td>
+                        ${isPending ? `<button onclick="window.dispatchOrder('${order.orderId}')" class="btn btn-sm btn-primary">Dispatch</button>` : `<span style="color:var(--text-muted);">Dispatched</span>`}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    window.dispatchOrder = function(orderId) {
+        const orders = store.getAllOrders();
+        const orderIdx = orders.findIndex(o => o.orderId === orderId);
+        if (orderIdx !== -1) {
+            orders[orderIdx].status = 'Dispatched';
+            store.saveOrders(orders);
+            renderVendorOrders();
+            showNotification('Order marked as Dispatched!', 'success');
         }
     };
 
@@ -258,4 +310,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     initVendorPortal();
+    renderVendorOrders();
 });
